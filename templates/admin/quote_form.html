@@ -1,0 +1,77 @@
+{% extends "app_layout.html" %}
+
+{% block title %}Tạo báo giá{% endblock %}
+
+{% block sidebar_menu %}
+{% include 'admin/_sidebar.html' %}
+{% endblock %}
+
+{% block page_title %}Tạo báo giá{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{{ url_for('admin.dashboard') }}">Dashboard</a></li>
+<li class="breadcrumb-item"><a href="{{ url_for('admin.requests') }}">Yêu cầu</a></li>
+<li class="breadcrumb-item active">Tạo báo giá</li>
+{% endblock %}
+
+{% block page_content %}
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">Thông tin báo giá</h3>
+    </div>
+    <div class="card-body">
+        <form method="POST">
+    {% for data in items %}
+    <div class="card mb-3">
+        <div class="card-body">
+            <h5>{{ data.item.products.name }}</h5>
+            <p>Số lượng: <strong>{{ data.item.quantity }}</strong></p>
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <label class="form-label">Chọn nhà cung cấp</label>
+                    <select name="product_supplier_{{ data.item.products.id }}" class="form-select" required>
+                        {% for ps in data.suppliers %}
+                        <option value="{{ ps.id }}" data-cost="{{ ps.cost_price }}" data-sell="{{ ps.sell_price }}">
+                            {{ ps.suppliers.name }} - Giá nhập: {{ "{:,.0f}".format(ps.cost_price) }}đ - Giá bán: {{ "{:,.0f}".format(ps.sell_price) }}đ
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="col-md-3">
+                    <label class="form-label">Giá bán (đ)</label>
+                    <input type="number" name="price_{{ data.item.products.id }}" class="form-control" 
+                           value="{{ data.suppliers[0].sell_price if data.suppliers else 0 }}" required>
+                </div>
+                
+                <input type="hidden" name="quantity_{{ data.item.products.id }}" value="{{ data.item.quantity }}">
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+    
+            <div class="mt-3">
+                <button type="submit" class="btn btn-success">
+                    <i class="fas fa-paper-plane"></i> Gửi báo giá
+                </button>
+                <a href="{{ url_for('admin.requests') }}" class="btn btn-secondary">Hủy</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+// Auto update price when change supplier
+document.querySelectorAll('select[name^="product_supplier_"]').forEach(select => {
+    select.addEventListener('change', function() {
+        const option = this.options[this.selectedIndex];
+        const sellPrice = option.dataset.sell;
+        const productId = this.name.split('_')[2];
+        document.querySelector(`input[name="price_${productId}"]`).value = sellPrice;
+    });
+});
+</script>
+
+{% endblock %}
+

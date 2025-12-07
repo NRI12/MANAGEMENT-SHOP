@@ -1,0 +1,74 @@
+{% extends "app_layout.html" %}
+{% block title %}Nhà cung cấp sản phẩm{% endblock %}
+
+{% block sidebar_menu %}
+{% include 'admin/_sidebar.html' %}
+{% endblock %}
+
+{% block page_title %}Nhà cung cấp cho sản phẩm{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{{ url_for('admin.dashboard') }}">Dashboard</a></li>
+<li class="breadcrumb-item"><a href="{{ url_for('admin.products') }}">Sản phẩm</a></li>
+<li class="breadcrumb-item active">Nhà cung cấp</li>
+{% endblock %}
+
+{% block page_content %}
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">Thêm nhà cung cấp</h3>
+    </div>
+    <div class="card-body">
+        <form method="post" class="row g-3">
+  <div class="col-md-4">
+    <label class="form-label">Nhà cung cấp</label>
+    <select name="supplier_id" class="form-select" required>
+      <option value="">-- Chọn --</option>
+      {% for s in suppliers %}
+      <option value="{{ s.id }}">{{ s.name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-md-3">
+    <label class="form-label">Giá vốn</label>
+    <input type="number" name="cost_price" step="0.01" class="form-control" required />
+  </div>
+  <div class="col-md-3">
+    <label class="form-label">Giá bán</label>
+    <input type="number" name="sell_price" step="0.01" class="form-control" required />
+  </div>
+  <div class="col-md-2 d-flex align-items-end">
+    <button class="btn btn-primary w-100">Thêm</button>
+        </div>
+        </form>
+    </div>
+</div>
+
+<div class="card mt-3">
+    <div class="card-header">
+        <h3 class="card-title">Danh sách nhà cung cấp</h3>
+    </div>
+    <div class="card-body">
+        <table class="table table-bordered table-striped">
+  <thead>
+    <tr>
+      <th>Nhà cung cấp</th>
+      <th>Giá vốn</th>
+      <th>Giá bán</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for ps in product_suppliers %}
+    <tr>
+      <td>{{ ps.suppliers.name if ps.suppliers }}</td>
+      <td>{{ ps.cost_price }}</td>
+      <td>{{ ps.sell_price }}</td>
+    </tr>
+    {% endfor %}
+        </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+

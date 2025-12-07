@@ -1,0 +1,76 @@
+{% extends "app_layout.html" %}
+
+{% block title %}Chi tiết báo giá{% endblock %}
+
+{% block sidebar_menu %}
+{% include 'customer/_sidebar.html' %}
+{% endblock %}
+
+{% block page_title %}Chi tiết báo giá{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{{ url_for('customer.dashboard') }}">Dashboard</a></li>
+<li class="breadcrumb-item active">Chi tiết báo giá</li>
+{% endblock %}
+
+{% block page_content %}
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">Thông tin báo giá</h3>
+    </div>
+    <div class="card-body">
+        <p><strong>Tổng tiền:</strong> {{ "{:,.0f}".format(quote.total_amount) }}đ</p>
+        <p><strong>Trạng thái:</strong> 
+            {% if quote.status == 'pending' %}
+            <span class="badge bg-warning">Chờ xác nhận</span>
+            {% elif quote.status == 'accepted' %}
+            <span class="badge bg-success">Đã chấp nhận</span>
+            {% else %}
+            <span class="badge bg-secondary">{{ quote.status }}</span>
+            {% endif %}
+        </p>
+    </div>
+</div>
+
+<div class="card mt-3">
+    <div class="card-header">
+        <h3 class="card-title">Sản phẩm</h3>
+    </div>
+    <div class="card-body">
+        <table class="table table-bordered">
+    <thead>
+        <tr>
+            <th>Sản phẩm</th>
+            <th>Nhà cung cấp</th>
+            <th>Số lượng</th>
+            <th>Giá báo</th>
+            <th>Thành tiền</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for i in items %}
+        <tr>
+            <td>{{ i.product_suppliers.products.name if i.product_suppliers and i.product_suppliers.products }}</td>
+            <td>{{ i.product_suppliers.suppliers.name if i.product_suppliers and i.product_suppliers.suppliers }}</td>
+            <td>{{ i.quantity }}</td>
+            <td>{{ i.quoted_price }}</td>
+            <td>{{ i.subtotal }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+        </table>
+    </div>
+</div>
+
+{% if quote.status == 'pending' %}
+<div class="mt-3">
+    <form method="post" action="{{ url_for('customer.accept_quote', quote_id=quote.id) }}">
+        <button class="btn btn-success">
+            <i class="fas fa-check"></i> Chấp nhận báo giá
+        </button>
+    </form>
+</div>
+{% endif %}
+{% endblock %}
+
+

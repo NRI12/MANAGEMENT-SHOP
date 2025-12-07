@@ -1,0 +1,43 @@
+{% extends "app_layout.html" %}
+{% block title %}Thêm sản phẩm{% endblock %}
+
+{% block sidebar_menu %}
+{% include 'admin/_sidebar.html' %}
+{% endblock %}
+
+{% block page_title %}Thêm sản phẩm{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{{ url_for('admin.dashboard') }}">Dashboard</a></li>
+<li class="breadcrumb-item"><a href="{{ url_for('admin.products') }}">Sản phẩm</a></li>
+<li class="breadcrumb-item active">Thêm mới</li>
+{% endblock %}
+
+{% block page_content %}
+<div class="card">
+    <div class="card-body">
+        <form method="post">
+  <div class="mb-3">
+    <label class="form-label">Tên</label>
+    <input type="text" name="name" class="form-control" required />
+  </div>
+  <div class="mb-3">
+    <label class="form-label">Mô tả</label>
+    <textarea name="description" class="form-control"></textarea>
+  </div>
+  <div class="mb-3">
+    <label class="form-label">Danh mục</label>
+    <input type="text" name="category" class="form-control" />
+  </div>
+            <div class="mt-3">
+                <button class="btn btn-primary">
+                    <i class="fas fa-save"></i> Lưu
+                </button>
+                <a href="{{ url_for('admin.products') }}" class="btn btn-secondary">Hủy</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+

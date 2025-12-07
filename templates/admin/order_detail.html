@@ -1,0 +1,169 @@
+{% extends "app_layout.html" %}
+
+{% block title %}Chi tiết đơn hàng{% endblock %}
+
+{% block sidebar_menu %}
+{% include 'admin/_sidebar.html' %}
+{% endblock %}
+
+{% block page_title %}Chi tiết đơn hàng #{{ order.id[:8] }}{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{{ url_for('admin.dashboard') }}">Dashboard</a></li>
+<li class="breadcrumb-item"><a href="{{ url_for('admin.orders') }}">Đơn hàng</a></li>
+<li class="breadcrumb-item active">Chi tiết</li>
+{% endblock %}
+
+{% block page_content %}
+    
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5>Thông tin đơn hàng</h5>
+                    <p><strong>Khách hàng:</strong> {{ order.customers.name }}</p>
+                    <p><strong>SĐT:</strong> {{ order.customers.phone }}</p>
+                    <p><strong>Nhà cung cấp:</strong> {{ order.suppliers.name }}</p>
+                    <p><strong>Trạng thái:</strong> 
+                        <span class="badge bg-info">{{ order.status }}</span>
+                    </p>
+                    <p><strong>Tracking:</strong> {{ order.tracking_code or 'Chưa có' }}</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5>Tài chính</h5>
+                    <p><strong>Giá nhập:</strong> {{ "{:,.0f}".format(order.total_cost) }}đ</p>
+                    <p><strong>Giá bán:</strong> {{ "{:,.0f}".format(order.total_sell) }}đ</p>
+                    <p><strong>Lợi nhuận:</strong> 
+                        <span class="text-success">{{ "{:,.0f}".format(order.profit) }}đ</span>
+                    </p>
+                    <hr>
+                    <p><strong>Đã thanh toán:</strong> {{ "{:,.0f}".format(total_paid) }}đ</p>
+                    <p><strong>Còn nợ:</strong> 
+                        <span class="text-danger">{{ "{:,.0f}".format(remaining) }}đ</span>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card mt-3">
+        <div class="card-body">
+            <h5>Danh sách sản phẩm</h5>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Sản phẩm</th>
+                        <th>Số lượng</th>
+                        <th>Giá nhập</th>
+                        <th>Giá bán</th>
+                        <th>Thành tiền</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in items %}
+                    <tr>
+                        <td>{{ item.product_suppliers.products.name }}</td>
+                        <td>{{ item.quantity }}</td>
+                        <td>{{ "{:,.0f}".format(item.cost_price) }}đ</td>
+                        <td>{{ "{:,.0f}".format(item.sell_price) }}đ</td>
+                        <td>{{ "{:,.0f}".format(item.subtotal) }}đ</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <!-- Update Status -->
+    <div class="card mt-3">
+        <div class="card-body">
+            <h5>Cập nhật trạng thái</h5>
+            <form method="POST" action="{{ url_for('admin.update_order_status', order_id=order.id) }}" class="row g-3">
+                <div class="col-auto">
+                    <select name="status" class="form-select">
+                        <option value="pending">Chờ xác nhận</option>
+                        <option value="confirmed">Đã xác nhận</option>
+                        <option value="shipping">Đang giao</option>
+                        <option value="completed">Hoàn thành</option>
+                    </select>
+                </div>
+                <div class="col-auto">
+                    <button type="submit" class="btn btn-primary">Cập nhật</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Add Tracking -->
+    {% if not order.tracking_code %}
+    <div class="card mt-3">
+        <div class="card-body">
+            <h5>Nhập mã vận chuyển</h5>
+            <form method="POST" action="{{ url_for('admin.update_tracking', order_id=order.id) }}" class="row g-3">
+                <div class="col-auto">
+                    <input type="text" name="tracking_code" class="form-control" placeholder="VD: VN123456789" required>
+                </div>
+                <div class="col-auto">
+                    <button type="submit" class="btn btn-success">Lưu tracking</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Add Payment -->
+    <div class="card mt-3">
+        <div class="card-body">
+            <h5>Ghi nhận thanh toán</h5>
+            <form method="POST" action="{{ url_for('admin.add_payment', order_id=order.id) }}" class="row g-3">
+                <div class="col-md-4">
+                    <input type="number" name="amount" class="form-control" placeholder="Số tiền" required>
+                </div>
+                <div class="col-md-3">
+                    <select name="payment_method" class="form-select">
+                        <option value="cash">Tiền mặt</option>
+                        <option value="bank">Chuyển khoản</option>
+                        <option value="momo">MoMo</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <input type="text" name="note" class="form-control" placeholder="Ghi chú">
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-success w-100">Thêm</button>
+                </div>
+            </form>
+            
+            <h6 class="mt-4">Lịch sử thanh toán</h6>
+            <table class="table table-sm">
+                <thead>
+                    <tr>
+                        <th>Ngày</th>
+                        <th>Số tiền</th>
+                        <th>Phương thức</th>
+                        <th>Ghi chú</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in payments %}
+                    <tr>
+                        <td>{{ p.paid_at[:10] }}</td>
+                        <td>{{ "{:,.0f}".format(p.amount) }}đ</td>
+                        <td>{{ p.payment_method }}</td>
+                        <td>{{ p.note or '-' }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+

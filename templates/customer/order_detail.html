@@ -1,0 +1,118 @@
+{% extends "app_layout.html" %}
+
+{% block title %}Chi tiết đơn hàng{% endblock %}
+
+{% block sidebar_menu %}
+{% include 'customer/_sidebar.html' %}
+{% endblock %}
+
+{% block page_title %}Chi tiết đơn hàng{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{{ url_for('customer.dashboard') }}">Dashboard</a></li>
+<li class="breadcrumb-item active">Chi tiết đơn hàng</li>
+{% endblock %}
+
+{% block page_content %}
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">Thông tin đơn hàng</h3>
+    </div>
+    <div class="card-body">
+        <p><strong>Nhà cung cấp:</strong> {{ order.suppliers.name if order.suppliers }}</p>
+        <p><strong>Tổng tiền:</strong> {{ "{:,.0f}".format(order.total_sell) }}đ</p>
+        <p><strong>Trạng thái:</strong> 
+            {% if order.status == 'shipping' %}
+            <span class="badge bg-primary">Đang giao</span>
+            {% elif order.status == 'completed' %}
+            <span class="badge bg-success">Hoàn thành</span>
+            {% else %}
+            <span class="badge bg-secondary">{{ order.status }}</span>
+            {% endif %}
+        </p>
+        <p><strong>Mã vận chuyển:</strong> {{ order.tracking_code or '-' }}</p>
+    </div>
+</div>
+
+<div class="card mt-3">
+    <div class="card-header">
+        <h3 class="card-title">Sản phẩm</h3>
+    </div>
+    <div class="card-body">
+        <table class="table table-bordered">
+    <thead>
+        <tr>
+            <th>Sản phẩm</th>
+            <th>Số lượng</th>
+            <th>Giá</th>
+            <th>Thành tiền</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for i in items %}
+        <tr>
+            <td>{{ i.product_suppliers.products.name if i.product_suppliers and i.product_suppliers.products }}</td>
+            <td>{{ i.quantity }}</td>
+            <td>{{ i.sell_price }}</td>
+            <td>{{ i.subtotal }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="card mt-3">
+    <div class="card-header">
+        <h3 class="card-title">Thanh toán</h3>
+    </div>
+    <div class="card-body">
+        <table class="table table-bordered">
+    <thead>
+        <tr>
+            <th>Thời gian</th>
+            <th>Số tiền</th>
+            <th>Hình thức</th>
+            <th>Ghi chú</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for p in customer_payments %}
+        <tr>
+            <td>{{ p.paid_at }}</td>
+            <td>{{ p.amount }}</td>
+            <td>{{ p.payment_method }}</td>
+            <td>{{ p.note }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="4" class="text-center">Chưa có thanh toán.</td></tr>
+        {% endfor %}
+        </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="card mt-3">
+    <div class="card-header">
+        <h3 class="card-title">Thêm thanh toán</h3>
+    </div>
+    <div class="card-body">
+        <form method="post" action="{{ url_for('customer.pay_order', order_id=order.id) }}" class="row g-2">
+    <div class="col-md-3">
+        <input type="number" step="0.01" name="amount" class="form-control" placeholder="Số tiền" required>
+    </div>
+    <div class="col-md-3">
+        <input type="text" name="payment_method" class="form-control" placeholder="Hình thức" required>
+    </div>
+    <div class="col-md-4">
+        <input type="text" name="note" class="form-control" placeholder="Ghi chú">
+    </div>
+    <div class="col-md-2">
+        <button class="btn btn-primary w-100">Thanh toán</button>
+        </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+

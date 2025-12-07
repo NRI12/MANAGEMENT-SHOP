@@ -1,0 +1,54 @@
+{% extends "app_layout.html" %}
+{% block title %}Sản phẩm{% endblock %}
+
+{% block sidebar_menu %}
+{% include 'admin/_sidebar.html' %}
+{% endblock %}
+
+{% block page_title %}Sản phẩm{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{{ url_for('admin.dashboard') }}">Dashboard</a></li>
+<li class="breadcrumb-item active">Sản phẩm</li>
+{% endblock %}
+
+{% block page_content %}
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">Danh sách sản phẩm</h3>
+        <div class="card-tools">
+            <a href="{{ url_for('admin.add_product') }}" class="btn btn-primary btn-sm">
+                <i class="fas fa-plus"></i> Thêm sản phẩm
+            </a>
+        </div>
+    </div>
+    <div class="card-body">
+        <table class="table table-bordered table-striped">
+  <thead>
+    <tr>
+      <th>Tên</th>
+      <th>Danh mục</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for p in products %}
+    <tr>
+      <td>{{ p.name }}</td>
+      <td>{{ p.category }}</td>
+      <td>
+        <a
+          href="{{ url_for('admin.product_suppliers', product_id=p.id) }}"
+          class="btn btn-sm btn-outline-secondary"
+          >Nhà cung cấp</a
+        >
+      </td>
+    </tr>
+    {% endfor %}
+        </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+

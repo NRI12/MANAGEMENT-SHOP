@@ -1,0 +1,32 @@
+<li class="nav-item">
+    <a href="{{ url_for('customer.dashboard') }}" class="nav-link {% if request.endpoint == 'customer.dashboard' %}active{% endif %}">
+        <i class="nav-icon fas fa-tachometer-alt"></i>
+        <p>Dashboard</p>
+    </a>
+</li>
+<li class="nav-item">
+    <a href="{{ url_for('customer.new_request') }}" class="nav-link {% if request.endpoint == 'customer.new_request' %}active{% endif %}">
+        <i class="nav-icon fas fa-plus-circle"></i>
+        <p>Tạo yêu cầu</p>
+    </a>
+</li>
+<li class="nav-item">
+    <a href="{{ url_for('customer.dashboard') }}#requests" class="nav-link">
+        <i class="nav-icon fas fa-inbox"></i>
+        <p>Yêu cầu của tôi</p>
+    </a>
+</li>
+<li class="nav-item">
+    <a href="{{ url_for('customer.dashboard') }}#orders" class="nav-link">
+        <i class="nav-icon fas fa-shopping-cart"></i>
+        <p>Đơn hàng của tôi</p>
+    </a>
+</li>
+<li class="nav-header">TÀI KHOẢN</li>
+<li class="nav-item">
+    <a href="{{ url_for('auth.logout') }}" class="nav-link">
+        <i class="nav-icon fas fa-sign-out-alt"></i>
+        <p>Đăng xuất</p>
+    </a>
+</li>
+

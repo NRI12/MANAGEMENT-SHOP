@@ -1,0 +1,112 @@
+{% extends "app_layout.html" %}
+
+{% block title %}Dashboard - Khách hàng{% endblock %}
+
+{% block sidebar_menu %}
+{% include 'customer/_sidebar.html' %}
+{% endblock %}
+
+{% block page_title %}Dashboard{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item active">Dashboard</li>
+{% endblock %}
+
+{% block page_content %}
+<div class="row mb-3">
+    <div class="col-12">
+        <a href="{{ url_for('customer.new_request') }}" class="btn btn-primary">
+            <i class="fas fa-plus-circle"></i> Tạo yêu cầu mới
+        </a>
+    </div>
+</div>
+
+<div class="card" id="requests">
+    <div class="card-header">
+        <h3 class="card-title">Yêu cầu của tôi</h3>
+    </div>
+    <div class="card-body">
+        <table class="table table-bordered table-striped">
+            <thead>
+                <tr>
+                    <th>Mã YC</th>
+                    <th>Trạng thái</th>
+                    <th>Ngày tạo</th>
+                    <th>Thao tác</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for req in requests %}
+                <tr>
+                    <td>{{ req.id[:8] }}</td>
+                    <td>
+                        {% if req.status == 'pending' %}
+                        <span class="badge bg-warning">Chờ báo giá</span>
+                        {% elif req.status == 'quoted' %}
+                        <span class="badge bg-info">Đã có báo giá</span>
+                        {% elif req.status == 'accepted' %}
+                        <span class="badge bg-success">Đã chấp nhận</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ req.created_at[:10] }}</td>
+                    <td>
+                        {% if req.status == 'quoted' %}
+                        <a href="{{ url_for('customer.view_quote', request_id=req.id) }}" class="btn btn-sm btn-primary">
+                            Xem báo giá
+                        </a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="card mt-3" id="orders">
+    <div class="card-header">
+        <h3 class="card-title">Đơn hàng của tôi</h3>
+    </div>
+    <div class="card-body">
+        <table class="table table-bordered table-striped">
+            <thead>
+                <tr>
+                    <th>Mã đơn</th>
+                    <th>Nhà CC</th>
+                    <th>Tổng tiền</th>
+                    <th>Trạng thái</th>
+                    <th>Tracking</th>
+                    <th>Thao tác</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for order in orders %}
+                <tr>
+                    <td>{{ order.id[:8] }}</td>
+                    <td>{{ order.suppliers.name }}</td>
+                    <td>{{ "{:,.0f}".format(order.total_sell) }}đ</td>
+                    <td>
+                        {% if order.status == 'shipping' %}
+                        <span class="badge bg-primary">Đang giao</span>
+                        {% elif order.status == 'completed' %}
+                        <span class="badge bg-success">Hoàn thành</span>
+                        {% else %}
+                        <span class="badge bg-secondary">{{ order.status }}</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ order.tracking_code or '-' }}</td>
+                    <td>
+                        <a href="{{ url_for('customer.order_detail', order_id=order.id) }}" class="btn btn-sm btn-primary">
+                            Chi tiết
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+
+

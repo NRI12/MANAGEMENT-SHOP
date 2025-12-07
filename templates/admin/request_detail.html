@@ -1,0 +1,66 @@
+{% extends "app_layout.html" %}
+
+{% block title %}Chi tiết yêu cầu{% endblock %}
+
+{% block sidebar_menu %}
+{% include 'admin/_sidebar.html' %}
+{% endblock %}
+
+{% block page_title %}Chi tiết yêu cầu{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{{ url_for('admin.dashboard') }}">Dashboard</a></li>
+<li class="breadcrumb-item"><a href="{{ url_for('admin.requests') }}">Yêu cầu</a></li>
+<li class="breadcrumb-item active">Chi tiết</li>
+{% endblock %}
+
+{% block page_content %}
+<div class="card">
+    <div class="card-body">
+        <h5 class="card-title">Khách hàng</h5>
+        <p>
+            {{ request.customers.name }} - {{ request.customers.phone }}<br>
+            {{ request.customers.email }}
+        </p>
+        <p><strong>Ghi chú:</strong> {{ request.note }}</p>
+        <p><strong>Trạng thái:</strong> {{ request.status }}</p>
+    </div>
+</div>
+
+    </div>
+</div>
+
+<div class="card mt-3">
+    <div class="card-header">
+        <h3 class="card-title">Sản phẩm yêu cầu</h3>
+    </div>
+    <div class="card-body">
+        <table class="table table-bordered">
+    <thead>
+        <tr>
+            <th>Sản phẩm</th>
+            <th>Số lượng</th>
+            <th>Ghi chú</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for i in items %}
+        <tr>
+            <td>{{ i.products.name }}</td>
+            <td>{{ i.quantity }}</td>
+            <td>{{ i.note }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="mt-3">
+    <a href="{{ url_for('admin.create_quote', request_id=request.id) }}" class="btn btn-primary">
+        <i class="fas fa-dollar-sign"></i> Tạo báo giá
+    </a>
+</div>
+{% endblock %}
+
+

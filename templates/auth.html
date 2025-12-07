@@ -1,0 +1,560 @@
+{% extends "base.html" %}
+
+{% block title %}
+  {% if mode == "login" %}
+    Đăng nhập
+  {% elif mode == "register" %}
+    Đăng ký
+  {% elif mode == "forgot" %}
+    Quên mật khẩu
+  {% elif mode == "reset" %}
+    Đặt lại mật khẩu
+  {% else %}
+    Xác thực
+  {% endif %}
+{% endblock %}
+
+{% block extra_css %}
+<style>
+  .auth-container {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 20px;
+  }
+  .auth-card {
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    padding: 40px;
+    width: 100%;
+    max-width: 450px;
+    animation: fadeInUp 0.5s ease-out;
+  }
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  .auth-logo {
+    text-align: center;
+    margin-bottom: 30px;
+  }
+  .auth-logo h2 {
+    color: #667eea;
+    font-weight: 700;
+    font-size: 32px;
+    margin: 0;
+  }
+  .auth-logo p {
+    color: #6c757d;
+    margin-top: 5px;
+    font-size: 14px;
+  }
+  .auth-form .form-label {
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 8px;
+    font-size: 14px;
+  }
+  .auth-form .form-control {
+    border-radius: 10px;
+    border: 2px solid #e9ecef;
+    padding: 12px 15px;
+    font-size: 15px;
+    transition: all 0.3s ease;
+  }
+  .auth-form .form-control:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+  }
+  .auth-form .btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    border-radius: 10px;
+    padding: 12px;
+    font-weight: 600;
+    font-size: 16px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  .auth-form .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+  }
+  .auth-form .btn-primary:active {
+    transform: translateY(0);
+  }
+  .auth-link {
+    color: #667eea;
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.2s ease;
+  }
+  .auth-link:hover {
+    color: #764ba2;
+    text-decoration: underline;
+  }
+  .auth-divider {
+    text-align: center;
+    margin: 25px 0;
+    color: #6c757d;
+    font-size: 14px;
+  }
+  .password-toggle {
+    position: relative;
+  }
+  .password-toggle-btn {
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: #6c757d;
+    cursor: pointer;
+    padding: 5px;
+  }
+  .password-toggle-btn:hover {
+    color: #667eea;
+  }
+  
+  /* Social Login Styles */
+  .social-divider {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    margin: 25px 0;
+  }
+  .social-divider::before,
+  .social-divider::after {
+    content: '';
+    flex: 1;
+    border-bottom: 1px solid #e9ecef;
+  }
+  .social-divider span {
+    padding: 0 15px;
+    color: #6c757d;
+    font-size: 14px;
+    font-weight: 500;
+  }
+  .social-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .social-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 20px;
+    border-radius: 10px;
+    border: 2px solid #e9ecef;
+    background: white;
+    color: #495057;
+    font-weight: 600;
+    font-size: 15px;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    cursor: pointer;
+  }
+  .social-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    border-color: currentColor;
+  }
+  .social-btn:active {
+    transform: translateY(0);
+  }
+  .social-btn i {
+    font-size: 18px;
+    margin-right: 10px;
+    width: 20px;
+    text-align: center;
+  }
+  .social-btn-google {
+    color: #db4437;
+  }
+  .social-btn-google:hover {
+    background: #f8f9fa;
+    border-color: #db4437;
+  }
+  .social-btn-facebook {
+    color: #1877f2;
+  }
+  .social-btn-facebook:hover {
+    background: #f8f9fa;
+    border-color: #1877f2;
+  }
+  .social-btn-github {
+    color: #333;
+  }
+  .social-btn-github:hover {
+    background: #f8f9fa;
+    border-color: #333;
+  }
+  .social-btn-twitter {
+    color: #1da1f2;
+  }
+  .social-btn-twitter:hover {
+    background: #f8f9fa;
+    border-color: #1da1f2;
+  }
+</style>
+{% endblock %}
+
+{% block auth_content %}
+<div class="auth-container">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <h2><i class="fas fa-shopping-bag"></i> OrderMS</h2>
+      <p>
+        {% if mode == "login" %}
+          Đăng nhập vào tài khoản của bạn
+        {% elif mode == "register" %}
+          Tạo tài khoản mới
+        {% elif mode == "forgot" %}
+          Khôi phục mật khẩu
+        {% elif mode == "reset" %}
+          Đặt lại mật khẩu mới
+        {% endif %}
+      </p>
+    </div>
+
+    {% if mode == "login" %}
+      <form method="post" class="auth-form">
+        <div class="mb-3">
+          <label class="form-label"><i class="fas fa-envelope me-2"></i>Email</label>
+          <input type="email" name="email" class="form-control" placeholder="Nhập email của bạn" required />
+        </div>
+        <div class="mb-3">
+          <label class="form-label"><i class="fas fa-lock me-2"></i>Mật khẩu</label>
+          <div class="password-toggle">
+            <input type="password" name="password" id="loginPassword" class="form-control" placeholder="Nhập mật khẩu" required />
+            <button type="button" class="password-toggle-btn" onclick="togglePassword('loginPassword')">
+              <i class="fas fa-eye" id="loginPasswordIcon"></i>
+            </button>
+          </div>
+        </div>
+        <div class="mb-3 d-flex justify-content-between align-items-center">
+          <div class="form-check">
+            <input type="checkbox" class="form-check-input" id="rememberMe">
+            <label class="form-check-label" for="rememberMe" style="font-size: 14px;">Ghi nhớ đăng nhập</label>
+          </div>
+          <a href="{{ url_for('auth.forgot_password') }}" class="auth-link" style="font-size: 14px;">Quên mật khẩu?</a>
+        </div>
+        <button class="btn btn-primary w-100 mb-3" type="submit">
+          <i class="fas fa-sign-in-alt me-2"></i>Đăng nhập
+        </button>
+        
+        <div class="social-divider">
+          <span>Hoặc</span>
+        </div>
+        
+        <div class="social-buttons">
+          <a href="{{ url_for('auth.oauth_login', provider='google') }}" class="social-btn social-btn-google">
+            <i class="fab fa-google"></i>
+            Đăng nhập với Google
+          </a>
+          <a href="{{ url_for('auth.oauth_login', provider='facebook') }}" class="social-btn social-btn-facebook">
+            <i class="fab fa-facebook-f"></i>
+            Đăng nhập với Facebook
+          </a>
+          <a href="{{ url_for('auth.oauth_login', provider='github') }}" class="social-btn social-btn-github">
+            <i class="fab fa-github"></i>
+            Đăng nhập với GitHub
+          </a>
+        </div>
+        
+        <div class="auth-divider" style="margin-top: 25px;">
+          Chưa có tài khoản? <a href="{{ url_for('auth.register') }}" class="auth-link">Đăng ký ngay</a>
+        </div>
+      </form>
+
+    {% elif mode == "register" %}
+      <form method="post" class="auth-form">
+        <div class="mb-3">
+          <label class="form-label"><i class="fas fa-user me-2"></i>Họ tên</label>
+          <input type="text" name="name" class="form-control" placeholder="Nhập họ tên của bạn" required />
+        </div>
+        <div class="mb-3">
+          <label class="form-label"><i class="fas fa-phone me-2"></i>Số điện thoại</label>
+          <input type="text" name="phone" class="form-control" placeholder="Nhập số điện thoại" required />
+        </div>
+        <div class="mb-3">
+          <label class="form-label"><i class="fas fa-envelope me-2"></i>Email</label>
+          <input type="email" name="email" class="form-control" placeholder="Nhập email của bạn" required />
+        </div>
+        <div class="mb-3">
+          <label class="form-label"><i class="fas fa-lock me-2"></i>Mật khẩu</label>
+          <div class="password-toggle">
+            <input type="password" name="password" id="registerPassword" class="form-control" placeholder="Tối thiểu 6 ký tự" required minlength="6" />
+            <button type="button" class="password-toggle-btn" onclick="togglePassword('registerPassword')">
+              <i class="fas fa-eye" id="registerPasswordIcon"></i>
+            </button>
+          </div>
+        </div>
+        <button class="btn btn-primary w-100 mb-3" type="submit">
+          <i class="fas fa-user-plus me-2"></i>Đăng ký
+        </button>
+        
+        <div class="social-divider">
+          <span>Hoặc</span>
+        </div>
+        
+        <div class="social-buttons">
+          <a href="{{ url_for('auth.oauth_login', provider='google') }}" class="social-btn social-btn-google">
+            <i class="fab fa-google"></i>
+            Đăng ký với Google
+          </a>
+          <a href="{{ url_for('auth.oauth_login', provider='facebook') }}" class="social-btn social-btn-facebook">
+            <i class="fab fa-facebook-f"></i>
+            Đăng ký với Facebook
+          </a>
+          <a href="{{ url_for('auth.oauth_login', provider='github') }}" class="social-btn social-btn-github">
+            <i class="fab fa-github"></i>
+            Đăng ký với GitHub
+          </a>
+        </div>
+        
+        <div class="auth-divider" style="margin-top: 25px;">
+          Đã có tài khoản? <a href="{{ url_for('auth.login') }}" class="auth-link">Đăng nhập</a>
+        </div>
+      </form>
+
+    {% elif mode == "forgot" %}
+      <form method="post" class="auth-form">
+        <div class="mb-4 text-center">
+          <i class="fas fa-key" style="font-size: 48px; color: #667eea; margin-bottom: 20px;"></i>
+          <p class="text-muted" style="font-size: 15px; line-height: 1.6;">
+            Nhập email đã đăng ký, chúng tôi sẽ gửi cho bạn liên kết để đặt lại mật khẩu.
+          </p>
+        </div>
+        <div class="mb-3">
+          <label class="form-label"><i class="fas fa-envelope me-2"></i>Email</label>
+          <input type="email" name="email" class="form-control" placeholder="Nhập email của bạn" required />
+        </div>
+        <button class="btn btn-primary w-100 mb-3" type="submit">
+          <i class="fas fa-paper-plane me-2"></i>Gửi liên kết đặt lại mật khẩu
+        </button>
+        <div class="auth-divider">
+          <a href="{{ url_for('auth.login') }}" class="auth-link">
+            <i class="fas fa-arrow-left me-2"></i>Quay lại đăng nhập
+          </a>
+        </div>
+      </form>
+
+    {% elif mode == "reset" %}
+      <form method="post" id="resetForm" class="auth-form">
+        <input type="hidden" name="access_token" id="accessToken" value="{{ access_token or '' }}" />
+        <input type="hidden" name="refresh_token" id="refreshToken" value="{{ refresh_token or '' }}" />
+        <div class="mb-4 text-center">
+          <i class="fas fa-lock" style="font-size: 48px; color: #667eea; margin-bottom: 20px;"></i>
+          <p class="text-muted" style="font-size: 15px; line-height: 1.6;">
+            Vui lòng nhập mật khẩu mới của bạn.
+          </p>
+        </div>
+        <div class="mb-3">
+          <label class="form-label"><i class="fas fa-lock me-2"></i>Mật khẩu mới</label>
+          <div class="password-toggle">
+            <input type="password" name="password" id="resetPassword" class="form-control" placeholder="Tối thiểu 6 ký tự" required minlength="6" />
+            <button type="button" class="password-toggle-btn" onclick="togglePassword('resetPassword')">
+              <i class="fas fa-eye" id="resetPasswordIcon"></i>
+            </button>
+          </div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label"><i class="fas fa-lock me-2"></i>Xác nhận mật khẩu</label>
+          <div class="password-toggle">
+            <input type="password" name="password_confirm" id="resetPasswordConfirm" class="form-control" placeholder="Nhập lại mật khẩu" required minlength="6" />
+            <button type="button" class="password-toggle-btn" onclick="togglePassword('resetPasswordConfirm')">
+              <i class="fas fa-eye" id="resetPasswordConfirmIcon"></i>
+            </button>
+          </div>
+        </div>
+        <button class="btn btn-primary w-100 mb-3" type="submit">
+          <i class="fas fa-check-circle me-2"></i>Đặt lại mật khẩu
+        </button>
+        <div class="auth-divider">
+          <a href="{{ url_for('auth.login') }}" class="auth-link">
+            <i class="fas fa-arrow-left me-2"></i>Quay lại đăng nhập
+          </a>
+        </div>
+      </form>
+      <script>
+        // Extract tokens from URL hash (#access_token=xxx&type=recovery&refresh_token=yyy)
+        if (!document.getElementById('accessToken').value) {
+          const hash = window.location.hash.substring(1);
+          const params = new URLSearchParams(hash);
+          const accessToken = params.get('access_token');
+          const refreshToken = params.get('refresh_token');
+          const type = params.get('type');
+          
+          if (accessToken && type === 'recovery') {
+            document.getElementById('accessToken').value = accessToken;
+            if (refreshToken) {
+              document.getElementById('refreshToken').value = refreshToken;
+            }
+          } else {
+            showToast('Link không hợp lệ hoặc đã hết hạn. Vui lòng yêu cầu link mới.', 'error');
+            setTimeout(() => {
+              window.location.href = "{{ url_for('auth.forgot_password') }}";
+            }, 2000);
+          }
+        }
+      </script>
+    
+    {% elif mode == "oauth_callback" %}
+      <div class="text-center py-5">
+        <div class="spinner-border text-primary mb-3" role="status" style="width: 3rem; height: 3rem;">
+          <span class="visually-hidden">Đang xử lý...</span>
+        </div>
+        <p class="text-muted mt-3">Đang xác thực tài khoản của bạn...</p>
+      </div>
+      <script>
+        // Handle OAuth callback - check for code in query params or tokens in hash
+        (function() {
+          // First check for code in query params (OAuth flow)
+          const urlParams = new URLSearchParams(window.location.search);
+          const code = urlParams.get('code');
+          
+          if (code) {
+            // Exchange code using Supabase JS client (if available) or send to backend
+            // Try to exchange code client-side first
+            const redirectTo = "{{ url_for('auth.oauth_callback', _external=True) }}";
+            
+            // Get Supabase config from backend via a simple endpoint or use inline
+            // For now, send code to backend to handle exchange
+            window.location.href = "{{ url_for('auth.oauth_callback') }}?code=" + code;
+            
+            // Exchange code for tokens using Supabase REST API
+            fetch(`${supabaseUrl}/auth/v1/token?grant_type=authorization_code`, {
+              method: 'POST',
+              headers: {
+                'apikey': supabaseKey,
+                'Content-Type': 'application/x-www-form-urlencoded'
+              },
+              body: new URLSearchParams({
+                code: code,
+                redirect_to: redirectTo
+              })
+            })
+            .then(response => response.json())
+            .then(data => {
+              if (data.access_token) {
+                // Send tokens to backend
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = "{{ url_for('auth.oauth_callback') }}";
+                
+                const tokenInput = document.createElement('input');
+                tokenInput.type = 'hidden';
+                tokenInput.name = 'access_token';
+                tokenInput.value = data.access_token;
+                form.appendChild(tokenInput);
+                
+                if (data.refresh_token) {
+                  const refreshInput = document.createElement('input');
+                  refreshInput.type = 'hidden';
+                  refreshInput.name = 'refresh_token';
+                  refreshInput.value = data.refresh_token;
+                  form.appendChild(refreshInput);
+                }
+                
+                document.body.appendChild(form);
+                form.submit();
+              } else {
+                // If client-side exchange fails, send code to backend
+                window.location.href = "{{ url_for('auth.oauth_callback') }}?code=" + code;
+              }
+            })
+            .catch(error => {
+              console.error('Client-side exchange failed:', error);
+              // Fallback: send code to backend
+              window.location.href = "{{ url_for('auth.oauth_callback') }}?code=" + code;
+            });
+            return;
+          }
+          
+          // Check for tokens in hash (alternative flow)
+          const hash = window.location.hash.substring(1);
+          const hashParams = new URLSearchParams(hash);
+          const accessToken = hashParams.get('access_token');
+          const refreshToken = hashParams.get('refresh_token');
+          const type = hashParams.get('type');
+          
+          if (accessToken && type === 'recovery') {
+            // This is password reset, redirect to reset page
+            window.location.href = "{{ url_for('auth.reset_password') }}#" + hash;
+          } else if (accessToken) {
+            // This is OAuth login with tokens in hash, send to callback endpoint
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = "{{ url_for('auth.oauth_callback') }}";
+            
+            const tokenInput = document.createElement('input');
+            tokenInput.type = 'hidden';
+            tokenInput.name = 'access_token';
+            tokenInput.value = accessToken;
+            form.appendChild(tokenInput);
+            
+            if (refreshToken) {
+              const refreshInput = document.createElement('input');
+              refreshInput.type = 'hidden';
+              refreshInput.name = 'refresh_token';
+              refreshInput.value = refreshToken;
+              form.appendChild(refreshInput);
+            }
+            
+            document.body.appendChild(form);
+            form.submit();
+          } else {
+            showToast('Không thể xác thực. Vui lòng thử lại.', 'error');
+            setTimeout(() => {
+              window.location.href = "{{ url_for('auth.login') }}";
+            }, 2000);
+          }
+        })();
+      </script>
+    {% endif %}
+  </div>
+</div>
+
+<script>
+  // Toggle password visibility
+  function togglePassword(inputId) {
+    const input = document.getElementById(inputId);
+    const icon = document.getElementById(inputId + 'Icon');
+    
+    if (input.type === 'password') {
+      input.type = 'text';
+      icon.classList.remove('fa-eye');
+      icon.classList.add('fa-eye-slash');
+    } else {
+      input.type = 'password';
+      icon.classList.remove('fa-eye-slash');
+      icon.classList.add('fa-eye');
+    }
+  }
+  
+  // Password confirmation validation
+  {% if mode == "reset" %}
+  document.getElementById('resetPasswordConfirm').addEventListener('input', function() {
+    const password = document.getElementById('resetPassword').value;
+    const confirm = this.value;
+    
+    if (confirm && password !== confirm) {
+      this.setCustomValidity('Mật khẩu xác nhận không khớp');
+    } else {
+      this.setCustomValidity('');
+    }
+  });
+  {% endif %}
+</script>
+{% endblock %}

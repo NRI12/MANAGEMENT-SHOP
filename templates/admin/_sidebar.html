@@ -1,0 +1,45 @@
+<li class="nav-item">
+    <a href="{{ url_for('admin.dashboard') }}" class="nav-link {% if request.endpoint == 'admin.dashboard' %}active{% endif %}">
+        <i class="nav-icon fas fa-tachometer-alt"></i>
+        <p>Dashboard</p>
+    </a>
+</li>
+<li class="nav-item">
+    <a href="{{ url_for('admin.requests') }}" class="nav-link {% if request.endpoint and request.endpoint.startswith('admin.requests') %}active{% endif %}">
+        <i class="nav-icon fas fa-inbox"></i>
+        <p>Yêu cầu</p>
+    </a>
+</li>
+<li class="nav-item">
+    <a href="{{ url_for('admin.orders') }}" class="nav-link {% if request.endpoint and request.endpoint.startswith('admin.orders') %}active{% endif %}">
+        <i class="nav-icon fas fa-shopping-cart"></i>
+        <p>Đơn hàng</p>
+    </a>
+</li>
+<li class="nav-item">
+    <a href="{{ url_for('admin.suppliers') }}" class="nav-link {% if request.endpoint and request.endpoint.startswith('admin.suppliers') %}active{% endif %}">
+        <i class="nav-icon fas fa-building"></i>
+        <p>Nhà cung cấp</p>
+    </a>
+</li>
+<li class="nav-item">
+    <a href="{{ url_for('admin.products') }}" class="nav-link {% if request.endpoint and request.endpoint.startswith('admin.products') %}active{% endif %}">
+        <i class="nav-icon fas fa-box"></i>
+        <p>Sản phẩm</p>
+    </a>
+</li>
+<li class="nav-item">
+    <a href="{{ url_for('admin.statistics') }}" class="nav-link {% if request.endpoint and request.endpoint.startswith('admin.statistics') %}active{% endif %}">
+        <i class="nav-icon fas fa-chart-line"></i>
+        <p>Thống kê</p>
+    </a>
+</li>
+<li class="nav-header">TÀI KHOẢN</li>
+<li class="nav-item">
+    <a href="{{ url_for('auth.logout') }}" class="nav-link">
+        <i class="nav-icon fas fa-sign-out-alt"></i>
+        <p>Đăng xuất</p>
+    </a>
+</li>
+
+

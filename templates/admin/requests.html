@@ -1,0 +1,66 @@
+{% extends "app_layout.html" %}
+
+{% block title %}Yêu cầu từ khách hàng{% endblock %}
+
+{% block sidebar_menu %}
+{% include 'admin/_sidebar.html' %}
+{% endblock %}
+
+{% block page_title %}Yêu cầu từ khách hàng{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{{ url_for('admin.dashboard') }}">Dashboard</a></li>
+<li class="breadcrumb-item active">Yêu cầu</li>
+{% endblock %}
+
+{% block page_content %}
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">Danh sách yêu cầu</h3>
+    </div>
+    <div class="card-body">
+        <table class="table table-bordered table-striped">
+    <thead>
+        <tr>
+            <th>Mã YC</th>
+            <th>Khách hàng</th>
+            <th>SĐT</th>
+            <th>Trạng thái</th>
+            <th>Ngày tạo</th>
+            <th>Thao tác</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for req in requests %}
+        <tr>
+            <td>{{ req.id[:8] }}</td>
+            <td>{{ req.customers.name }}</td>
+            <td>{{ req.customers.phone }}</td>
+            <td>
+                {% if req.status == 'pending' %}
+                <span class="badge bg-warning">Chờ báo giá</span>
+                {% elif req.status == 'quoted' %}
+                <span class="badge bg-info">Đã báo giá</span>
+                {% elif req.status == 'accepted' %}
+                <span class="badge bg-success">Đã chấp nhận</span>
+                {% endif %}
+            </td>
+            <td>{{ req.created_at[:10] }}</td>
+            <td>
+                <a href="{{ url_for('admin.request_detail', request_id=req.id) }}" class="btn btn-sm btn-primary">
+                    <i class="bi bi-eye"></i>
+                </a>
+                {% if req.status == 'pending' %}
+                <a href="{{ url_for('admin.create_quote', request_id=req.id) }}" class="btn btn-sm btn-success">
+                    <i class="bi bi-currency-dollar"></i> Báo giá
+                </a>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+

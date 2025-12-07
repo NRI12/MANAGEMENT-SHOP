@@ -1,0 +1,50 @@
+{% extends "app_layout.html" %}
+{% block title %}Nhà cung cấp{% endblock %}
+
+{% block sidebar_menu %}
+{% include 'admin/_sidebar.html' %}
+{% endblock %}
+
+{% block page_title %}Nhà cung cấp{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{{ url_for('admin.dashboard') }}">Dashboard</a></li>
+<li class="breadcrumb-item active">Nhà cung cấp</li>
+{% endblock %}
+
+{% block page_content %}
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">Danh sách nhà cung cấp</h3>
+        <div class="card-tools">
+            <a href="{{ url_for('admin.add_supplier') }}" class="btn btn-primary btn-sm">
+                <i class="fas fa-plus"></i> Thêm nhà cung cấp
+            </a>
+        </div>
+    </div>
+    <div class="card-body">
+        <table class="table table-bordered table-striped">
+    <thead>
+      <tr>
+        <th>Tên</th>
+        <th>Liên hệ</th>
+        <th>Điện thoại</th>
+        <th>Email</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for s in suppliers %}
+      <tr>
+        <td>{{ s.name }}</td>
+        <td>{{ s.contact_person }}</td>
+        <td>{{ s.phone }}</td>
+        <td>{{ s.email }}</td>
+      </tr>
+      {% endfor %}
+        </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+

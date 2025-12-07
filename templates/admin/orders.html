@@ -1,0 +1,81 @@
+{% extends "app_layout.html" %}
+
+{% block title %}Quản lý đơn hàng{% endblock %}
+
+{% block sidebar_menu %}
+{% include 'admin/_sidebar.html' %}
+{% endblock %}
+
+{% block page_title %}Quản lý đơn hàng{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{{ url_for('admin.dashboard') }}">Dashboard</a></li>
+<li class="breadcrumb-item active">Đơn hàng</li>
+{% endblock %}
+
+{% block page_content %}
+<div class="card">
+    <div class="card-header">
+        <div class="card-tools">
+            <input type="text" id="searchBox" class="form-control form-control-sm" placeholder="Tìm theo mã đơn, tracking, khách hàng..." style="width: 300px;">
+        </div>
+    </div>
+    <div class="card-body">
+        <table class="table table-bordered table-striped" id="ordersTable">
+    <thead>
+        <tr>
+            <th>Mã đơn</th>
+            <th>Khách hàng</th>
+            <th>Nhà CC</th>
+            <th>Tổng tiền</th>
+            <th>Lợi nhuận</th>
+            <th>Trạng thái</th>
+            <th>Tracking</th>
+            <th>Thao tác</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for order in orders %}
+        <tr>
+            <td>{{ order.id[:8] }}</td>
+            <td>{{ order.customers.name }}</td>
+            <td>{{ order.suppliers.name }}</td>
+            <td>{{ "{:,.0f}".format(order.total_sell) }}đ</td>
+            <td class="text-success">{{ "{:,.0f}".format(order.profit) }}đ</td>
+            <td>
+                {% if order.status == 'pending' %}
+                <span class="badge bg-secondary">Chờ xác nhận</span>
+                {% elif order.status == 'confirmed' %}
+                <span class="badge bg-info">Đã xác nhận</span>
+                {% elif order.status == 'shipping' %}
+                <span class="badge bg-primary">Đang giao</span>
+                {% elif order.status == 'completed' %}
+                <span class="badge bg-success">Hoàn thành</span>
+                {% endif %}
+            </td>
+            <td>{{ order.tracking_code or '-' }}</td>
+            <td>
+                <a href="{{ url_for('admin.order_detail', order_id=order.id) }}" class="btn btn-sm btn-primary">
+                    <i class="bi bi-eye"></i>
+                </a>
+            </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+// Simple search
+document.getElementById('searchBox').addEventListener('keyup', function() {
+    const value = this.value.toLowerCase();
+    const rows = document.querySelectorAll('#ordersTable tbody tr');
+    rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        row.style.display = text.includes(value) ? '' : 'none';
+    });
+});
+</script>
+{% endblock %}
+
