@@ -418,82 +418,22 @@
         <p class="text-muted mt-3">Đang xác thực tài khoản của bạn...</p>
       </div>
       <script>
-        // Handle OAuth callback - check for code in query params or tokens in hash
         (function() {
-          // First check for code in query params (OAuth flow)
-          const urlParams = new URLSearchParams(window.location.search);
-          const code = urlParams.get('code');
-          
-          if (code) {
-            // Exchange code using Supabase JS client (if available) or send to backend
-            // Try to exchange code client-side first
-            const redirectTo = "{{ url_for('auth.oauth_callback', _external=True) }}";
-            
-            // Get Supabase config from backend via a simple endpoint or use inline
-            // For now, send code to backend to handle exchange
-            window.location.href = "{{ url_for('auth.oauth_callback') }}?code=" + code;
-            
-            // Exchange code for tokens using Supabase REST API
-            fetch(`${supabaseUrl}/auth/v1/token?grant_type=authorization_code`, {
-              method: 'POST',
-              headers: {
-                'apikey': supabaseKey,
-                'Content-Type': 'application/x-www-form-urlencoded'
-              },
-              body: new URLSearchParams({
-                code: code,
-                redirect_to: redirectTo
-              })
-            })
-            .then(response => response.json())
-            .then(data => {
-              if (data.access_token) {
-                // Send tokens to backend
-                const form = document.createElement('form');
-                form.method = 'POST';
-                form.action = "{{ url_for('auth.oauth_callback') }}";
-                
-                const tokenInput = document.createElement('input');
-                tokenInput.type = 'hidden';
-                tokenInput.name = 'access_token';
-                tokenInput.value = data.access_token;
-                form.appendChild(tokenInput);
-                
-                if (data.refresh_token) {
-                  const refreshInput = document.createElement('input');
-                  refreshInput.type = 'hidden';
-                  refreshInput.name = 'refresh_token';
-                  refreshInput.value = data.refresh_token;
-                  form.appendChild(refreshInput);
-                }
-                
-                document.body.appendChild(form);
-                form.submit();
-              } else {
-                // If client-side exchange fails, send code to backend
-                window.location.href = "{{ url_for('auth.oauth_callback') }}?code=" + code;
-              }
-            })
-            .catch(error => {
-              console.error('Client-side exchange failed:', error);
-              // Fallback: send code to backend
-              window.location.href = "{{ url_for('auth.oauth_callback') }}?code=" + code;
-            });
-            return;
-          }
-          
-          // Check for tokens in hash (alternative flow)
+          // Chỉ xử lý tokens từ hash (Supabase đã exchange code rồi)
           const hash = window.location.hash.substring(1);
           const hashParams = new URLSearchParams(hash);
           const accessToken = hashParams.get('access_token');
           const refreshToken = hashParams.get('refresh_token');
           const type = hashParams.get('type');
           
-          if (accessToken && type === 'recovery') {
-            // This is password reset, redirect to reset page
+          if (type === 'recovery') {
+            // Password reset → redirect sang trang reset
             window.location.href = "{{ url_for('auth.reset_password') }}#" + hash;
-          } else if (accessToken) {
-            // This is OAuth login with tokens in hash, send to callback endpoint
+            return;
+          }
+          
+          if (accessToken) {
+            // OAuth login thành công → gửi tokens lên server
             const form = document.createElement('form');
             form.method = 'POST';
             form.action = "{{ url_for('auth.oauth_callback') }}";
@@ -515,6 +455,7 @@
             document.body.appendChild(form);
             form.submit();
           } else {
+            // Không có tokens → lỗi
             showToast('Không thể xác thực. Vui lòng thử lại.', 'error');
             setTimeout(() => {
               window.location.href = "{{ url_for('auth.login') }}";

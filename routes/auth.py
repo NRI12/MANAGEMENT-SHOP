@@ -167,7 +167,7 @@ def oauth_login(provider):
 
 @bp.route("/auth/callback", methods=["GET", "POST"])
 def oauth_callback():
-    code = request.args.get("code")
+    # POST: nhận tokens từ JavaScript
     if request.method == "POST":
         access_token = request.form.get("access_token")
         refresh_token = request.form.get("refresh_token")
@@ -182,82 +182,20 @@ def oauth_callback():
             except Exception as e:
                 flash(f"Lỗi xác thực: {str(e)}", "error")
                 return redirect(url_for("auth.login"))
+    
+    # GET với code: exchange code bằng Supabase client
+    code = request.args.get("code")
     if code:
         try:
-            redirect_url = current_app.config.get("REDIRECT_URL", "http://localhost:5000")
-            callback_url = f"{redirect_url}/auth/callback"
-            import httpx
-            exchange_url = f"{Config.SUPABASE_URL}/auth/v1/token"
-            try:
-                headers = {
-                    "apikey": Config.SUPABASE_KEY,
-                    "Content-Type": "application/json"
-                }
-                json_data = {
-                    "code": code,
-                    "redirect_to": callback_url
-                }
-                
-                response = httpx.post(
-                    exchange_url,
-                    json=json_data,
-                    headers=headers,
-                    timeout=10.0
-                )
-                
-                if response.status_code != 200:
-                    headers["Content-Type"] = "application/x-www-form-urlencoded"
-                    form_data = {
-                        "code": code,
-                        "redirect_to": callback_url
-                    }
-                    
-                    response = httpx.post(
-                        exchange_url,
-                        data=form_data,
-                        headers=headers,
-                        timeout=10.0
-                    )
-                print(f"OAuth Exchange Response: Status {response.status_code}")
-                if response.status_code != 200:
-                    print(f"Error Response: {response.text}")
-                if response.status_code == 200:
-                    tokens = response.json()
-                    access_token = tokens.get("access_token")
-                    refresh_token = tokens.get("refresh_token")
-                    if access_token:
-                        auth_response = supabase.auth.set_session(
-                            access_token=access_token,
-                            refresh_token=refresh_token
-                        )
-                        
-                        user = auth_response.user
-                        return _handle_oauth_user(user, is_new_user=True)
-                    else:
-                        flash("Không thể lấy token từ code. Vui lòng thử lại.", "error")
-                        return redirect(url_for("auth.login"))
-                else:
-                    try:
-                        error_data = response.json()
-                        error_msg = error_data.get("msg") or error_data.get("error_description") or error_data.get("error") or response.text[:150]
-                    except:
-                        error_msg = response.text[:150] if hasattr(response, 'text') else f"Status {response.status_code}"
-                    
-                    print(f"OAuth Exchange Failed: {error_msg}")
-                    flash(f"Lỗi xác thực: {error_msg}. Vui lòng kiểm tra Redirect URL trong Supabase Dashboard phải là: {callback_url}", "error")
-                    return redirect(url_for("auth.login"))
-                    
-            except httpx.RequestError as e:
-                print(f"OAuth Request Error: {str(e)}")
-                flash(f"Lỗi kết nối đến Supabase: {str(e)}", "error")
-                return redirect(url_for("auth.login"))
-            
+            # Dùng Supabase SDK để exchange code
+            auth_response = supabase.auth.exchange_code_for_session(code)
+            user = auth_response.user
+            return _handle_oauth_user(user, is_new_user=True)
         except Exception as e:
-            import traceback
-            print(f"OAuth Callback Error: {str(e)}")
-            print(traceback.format_exc())
             flash(f"Lỗi xác thực: {str(e)}", "error")
             return redirect(url_for("auth.login"))
+    
+    # GET không có code: hiển thị trang cho JavaScript xử lý hash
     return render_template("auth.html", mode="oauth_callback")
 
 
