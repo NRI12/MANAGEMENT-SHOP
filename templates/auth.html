@@ -411,59 +411,140 @@
       </script>
     
     {% elif mode == "oauth_callback" %}
-      <div class="text-center py-5">
-        <div class="spinner-border text-primary mb-3" role="status" style="width: 3rem; height: 3rem;">
-          <span class="visually-hidden">Đang xử lý...</span>
-        </div>
-        <p class="text-muted mt-3">Đang xác thực tài khoản của bạn...</p>
+    <div class="text-center py-5">
+      <div class="spinner-border text-primary mb-3" role="status" style="width: 3rem; height: 3rem;">
+        <span class="visually-hidden">Đang xử lý...</span>
       </div>
-      <script>
-        (function() {
-          // Chỉ xử lý tokens từ hash (Supabase đã exchange code rồi)
-          const hash = window.location.hash.substring(1);
-          const hashParams = new URLSearchParams(hash);
-          const accessToken = hashParams.get('access_token');
-          const refreshToken = hashParams.get('refresh_token');
-          const type = hashParams.get('type');
+      <p class="text-muted mt-3" id="status">Đang xác thực tài khoản...</p>
+    </div>
+    <!-- Supabase JS Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+      (async function() {
+        console.log('OAuth callback started');
+        
+        // Initialize Supabase client
+        const supabaseUrl = '{{ supabase_url }}';
+        const supabaseKey = '{{ supabase_key }}';
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+        
+        // Lấy code từ query params
+        const urlParams = new URLSearchParams(window.location.search);
+        const code = urlParams.get('code');
+        
+        // Lấy tokens từ hash
+        const hash = window.location.hash.substring(1);
+        const hashParams = new URLSearchParams(hash);
+        const accessToken = hashParams.get('access_token');
+        const refreshToken = hashParams.get('refresh_token');
+        const type = hashParams.get('type');
+        
+        console.log('Code:', code);
+        console.log('Access Token:', accessToken ? 'EXISTS' : 'NULL');
+        console.log('Type:', type);
+        
+        // Password recovery flow
+        if (type === 'recovery') {
+          window.location.href = '{{ url_for("auth.reset_password") }}' + window.location.hash;
+          return;
+        }
+        
+        // Case 1: Có code → exchange code for session (PKCE flow)
+        if (code) {
+          console.log('Exchanging code for session...');
+          document.getElementById('status').textContent = 'Đang xác thực...';
           
-          if (type === 'recovery') {
-            // Password reset → redirect sang trang reset
-            window.location.href = "{{ url_for('auth.reset_password') }}#" + hash;
-            return;
-          }
-          
-          if (accessToken) {
-            // OAuth login thành công → gửi tokens lên server
-            const form = document.createElement('form');
-            form.method = 'POST';
-            form.action = "{{ url_for('auth.oauth_callback') }}";
+          try {
+            // Exchange code for session using Supabase JS client
+            const { data, error } = await supabase.auth.exchangeCodeForSession(code);
             
-            const tokenInput = document.createElement('input');
-            tokenInput.type = 'hidden';
-            tokenInput.name = 'access_token';
-            tokenInput.value = accessToken;
-            form.appendChild(tokenInput);
+            if (error) {
+              console.error('Error exchanging code:', error);
+              throw error;
+            }
             
-            if (refreshToken) {
+            if (data.session) {
+              console.log('Code exchanged successfully, sending tokens to server');
+              // Send tokens to server
+              const form = document.createElement('form');
+              form.method = 'POST';
+              form.action = '{{ url_for("auth.oauth_complete") }}';
+              
+              const accessInput = document.createElement('input');
+              accessInput.type = 'hidden';
+              accessInput.name = 'access_token';
+              accessInput.value = data.session.access_token;
+              form.appendChild(accessInput);
+              
               const refreshInput = document.createElement('input');
               refreshInput.type = 'hidden';
               refreshInput.name = 'refresh_token';
-              refreshInput.value = refreshToken;
+              refreshInput.value = data.session.refresh_token;
               form.appendChild(refreshInput);
+              
+              document.body.appendChild(form);
+              form.submit();
+              return;
+            } else {
+              throw new Error('No session returned from code exchange');
+            }
+          } catch (error) {
+            console.error('Error in code exchange:', error);
+            document.getElementById('status').textContent = 'Xác thực thất bại';
+            
+            if (typeof showToast === 'function') {
+              showToast('Xác thực thất bại. Vui lòng thử lại.', 'error');
             }
             
-            document.body.appendChild(form);
-            form.submit();
-          } else {
-            // Không có tokens → lỗi
-            showToast('Không thể xác thực. Vui lòng thử lại.', 'error');
-            setTimeout(() => {
-              window.location.href = "{{ url_for('auth.login') }}";
+            setTimeout(function() {
+              window.location.href = '{{ url_for("auth.login") }}';
             }, 2000);
+            return;
           }
-        })();
-      </script>
-    {% endif %}
+        }
+        
+        // Case 2: Có access_token → gửi tokens cho server (implicit flow)
+        if (accessToken) {
+          console.log('Submitting tokens to server');
+          document.getElementById('status').textContent = 'Đang hoàn tất đăng nhập...';
+          
+          const form = document.createElement('form');
+          form.method = 'POST';
+          form.action = '{{ url_for("auth.oauth_complete") }}';
+          
+          const accessInput = document.createElement('input');
+          accessInput.type = 'hidden';
+          accessInput.name = 'access_token';
+          accessInput.value = accessToken;
+          form.appendChild(accessInput);
+          
+          if (refreshToken) {
+            const refreshInput = document.createElement('input');
+            refreshInput.type = 'hidden';
+            refreshInput.name = 'refresh_token';
+            refreshInput.value = refreshToken;
+            form.appendChild(refreshInput);
+          }
+          
+          document.body.appendChild(form);
+          form.submit();
+          return;
+        }
+        
+        // Không có code hoặc token
+        console.error('No code or access token found!');
+        document.getElementById('status').textContent = 'Xác thực thất bại';
+        
+        if (typeof showToast === 'function') {
+          showToast('Xác thực thất bại. Vui lòng thử lại.', 'error');
+        }
+        
+        setTimeout(function() {
+          window.location.href = '{{ url_for("auth.login") }}';
+        }, 2000);
+      })();
+    </script>
+  {% endif %}
   </div>
 </div>
 

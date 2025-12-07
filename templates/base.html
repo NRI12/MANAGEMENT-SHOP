@@ -144,11 +144,12 @@
             
             const bsToast = new bootstrap.Toast(toast, {
                 autohide: true,
-                delay: 5000
+                delay: 5000  // Ẩn sau 5 giây
             });
             
             bsToast.show();
             
+            // Tự động xóa toast sau khi ẩn
             toast.addEventListener('hidden.bs.toast', function() {
                 toast.remove();
             });

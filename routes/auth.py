@@ -1,4 +1,5 @@
 from flask import Blueprint, current_app, flash, redirect, render_template, request, session, url_for
+import requests
 
 from config import Config
 from models.db import get_user_role, supabase
@@ -32,78 +33,6 @@ def login():
     return render_template("auth.html", mode="login")
 
 
-@bp.route("/forgot-password", methods=["GET", "POST"])
-def forgot_password():
-    if request.method == "POST":
-        email = request.form.get("email", "").strip()
-
-        if not email:
-            flash("Vui lòng nhập email.", "error")
-            return render_template("auth.html", mode="forgot")
-
-        try:
-            redirect_url = current_app.config.get("REDIRECT_URL", "http://localhost:5000")
-            reset_url = f"{redirect_url}/reset-password"
-            supabase.auth.reset_password_email(
-                email,
-                options={"redirect_to": reset_url}
-            )
-
-            flash(
-                "Nếu email tồn tại trong hệ thống, liên kết đặt lại mật khẩu "
-                "đã được gửi. Vui lòng kiểm tra hộp thư.",
-                "success",
-            )
-            return redirect(url_for("auth.login"))
-        except Exception as e:
-            flash(f"Không thể gửi email đặt lại mật khẩu: {str(e)}", "error")
-
-    return render_template("auth.html", mode="forgot")
-
-
-@bp.route("/reset-password", methods=["GET", "POST"])
-def reset_password():
-    if request.method == "POST":
-        password = request.form.get("password", "")
-        password_confirm = request.form.get("password_confirm", "")
-        access_token = request.form.get("access_token", "")
-        refresh_token = request.form.get("refresh_token", "")
-
-        if not password or not password_confirm:
-            flash("Vui lòng nhập đầy đủ thông tin.", "error")
-            return render_template("auth.html", mode="reset", access_token=access_token, refresh_token=refresh_token)
-
-        if password != password_confirm:
-            flash("Mật khẩu xác nhận không khớp.", "error")
-            return render_template("auth.html", mode="reset", access_token=access_token, refresh_token=refresh_token)
-
-        if len(password) < 6:
-            flash("Mật khẩu phải có ít nhất 6 ký tự.", "error")
-            return render_template("auth.html", mode="reset", access_token=access_token, refresh_token=refresh_token)
-
-        if not access_token:
-            flash("Token không hợp lệ. Vui lòng yêu cầu link mới.", "error")
-            return redirect(url_for("auth.forgot_password"))
-
-        try:
-            from supabase import create_client
-            temp_client = create_client(Config.SUPABASE_URL, Config.SUPABASE_KEY)
-            auth_response = temp_client.auth.set_session(
-                access_token=access_token,
-                refresh_token=refresh_token
-            )
-            
-            temp_client.auth.update_user({"password": password})
-
-            flash("Đặt lại mật khẩu thành công! Vui lòng đăng nhập.", "success")
-            return redirect(url_for("auth.login"))
-        except Exception as e:
-            flash(f"Không thể đặt lại mật khẩu: {str(e)}. Link có thể đã hết hạn.", "error")
-            return redirect(url_for("auth.forgot_password"))
-
-    return render_template("auth.html", mode="reset")
-
-
 @bp.route("/register", methods=["GET", "POST"])
 def register():
     if request.method == "POST":
@@ -113,13 +42,8 @@ def register():
         phone = request.form.get("phone", "").strip()
 
         try:
-            redirect_url = current_app.config.get("REDIRECT_URL", "http://localhost:5000")
             auth_response = supabase.auth.sign_up(
-                {
-                    "email": email,
-                    "password": password
-                },
-                options={"email_redirect_to": redirect_url}
+                {"email": email, "password": password}
             )
 
             user = auth_response.user
@@ -141,109 +65,260 @@ def register():
     return render_template("auth.html", mode="register")
 
 
+@bp.route("/forgot-password", methods=["GET", "POST"])
+def forgot_password():
+    if request.method == "POST":
+        email = request.form.get("email", "").strip()
+
+        if not email:
+            flash("Vui lòng nhập email.", "error")
+            return render_template("auth.html", mode="forgot")
+
+        try:
+            redirect_url = Config.REDIRECT_URL
+            reset_url = f"{redirect_url}/reset-password"
+            supabase.auth.reset_password_email(
+                email, options={"redirect_to": reset_url}
+            )
+
+            flash(
+                "Nếu email tồn tại trong hệ thống, liên kết đặt lại mật khẩu đã được gửi.",
+                "success",
+            )
+            return redirect(url_for("auth.login"))
+        except Exception as e:
+            flash(f"Lỗi: {str(e)}", "error")
+
+    return render_template("auth.html", mode="forgot")
+
+
+@bp.route("/reset-password", methods=["GET", "POST"])
+def reset_password():
+    if request.method == "POST":
+        password = request.form.get("password", "")
+        password_confirm = request.form.get("password_confirm", "")
+        access_token = request.form.get("access_token", "")
+        refresh_token = request.form.get("refresh_token", "")
+
+        if not password or password != password_confirm:
+            flash("Mật khẩu không khớp.", "error")
+            return render_template("auth.html", mode="reset")
+
+        if len(password) < 6:
+            flash("Mật khẩu phải có ít nhất 6 ký tự.", "error")
+            return render_template("auth.html", mode="reset")
+
+        if not access_token:
+            flash("Token không hợp lệ.", "error")
+            return redirect(url_for("auth.forgot_password"))
+
+        try:
+            from supabase import create_client
+            temp_client = create_client(Config.SUPABASE_URL, Config.SUPABASE_KEY)
+            temp_client.auth.set_session(
+                access_token=access_token, refresh_token=refresh_token
+            )
+            temp_client.auth.update_user({"password": password})
+
+            flash("Đặt lại mật khẩu thành công!", "success")
+            return redirect(url_for("auth.login"))
+        except Exception as e:
+            flash(f"Lỗi: {str(e)}", "error")
+            return redirect(url_for("auth.forgot_password"))
+
+    return render_template("auth.html", mode="reset")
+
 @bp.route("/auth/<provider>")
 def oauth_login(provider):
-    redirect_url = current_app.config.get("REDIRECT_URL", "http://localhost:5000")
-    callback_url = f"{redirect_url}/auth/callback"
+    """Initiate OAuth with provider"""
+    # Generate state for security
+    import secrets
+    state = secrets.token_urlsafe(32)
+    session['oauth_state'] = state
     
-    try:
-        response = supabase.auth.sign_in_with_oauth({
-            "provider": provider,
-            "options": {
-                "redirect_to": callback_url
-            }
-        })
-        if hasattr(response, 'url') and response.url:
-            return redirect(response.url)
-        elif isinstance(response, dict) and 'url' in response:
-            return redirect(response['url'])
-        else:
-            flash(f"Không thể khởi tạo đăng nhập với {provider}. Vui lòng kiểm tra cấu hình OAuth trong Supabase.", "error")
-            return redirect(url_for("auth.login"))
-    except Exception as e:
-        flash(f"Lỗi đăng nhập với {provider}: {str(e)}", "error")
-        return redirect(url_for("auth.login"))
+    redirect_url = f"{Config.REDIRECT_URL}/auth/callback"
+    
+    # Get OAuth URL from Supabase
+    # For server-side Flask apps, use implicit flow (tokens in hash) instead of PKCE
+    response = supabase.auth.sign_in_with_oauth({
+        "provider": provider,
+        "options": {
+            "redirect_to": redirect_url,
+            "skip_browser_redirect": False  # Let browser handle redirect for implicit flow
+        }
+    })
+    
+    if hasattr(response, 'url'):
+        return redirect(response.url)
+    flash("Không thể kết nối OAuth", "error")
+    return redirect(url_for("auth.login"))
 
 
-@bp.route("/auth/callback", methods=["GET", "POST"])
+@bp.route("/auth/callback")
 def oauth_callback():
-    # POST: nhận tokens từ JavaScript
-    if request.method == "POST":
-        access_token = request.form.get("access_token")
-        refresh_token = request.form.get("refresh_token")
-        
-        if access_token:
-            try:
-                auth_response = supabase.auth.set_session(
-                    access_token=access_token,
-                    refresh_token=refresh_token
-                )
-                return _handle_oauth_user(auth_response.user, is_new_user=False)
-            except Exception as e:
-                flash(f"Lỗi xác thực: {str(e)}", "error")
-                return redirect(url_for("auth.login"))
+    """Handle OAuth callback - server side processing"""
+    error = request.args.get('error')
+    if error:
+        flash(f"Lỗi OAuth: {error}", "error")
+        return redirect(url_for("auth.login"))
     
-    # GET với code: exchange code bằng Supabase client
-    code = request.args.get("code")
+    # Try to handle code exchange directly on server side (PKCE flow)
+    code = request.args.get('code')
     if code:
         try:
-            # Dùng Supabase SDK để exchange code
-            auth_response = supabase.auth.exchange_code_for_session(code)
-            user = auth_response.user
-            return _handle_oauth_user(user, is_new_user=True)
+            print(f"DEBUG: Processing code in callback: {code}")
+            
+            # Exchange code using REST API directly
+            exchange_url = f"{Config.SUPABASE_URL}/auth/v1/token?grant_type=authorization_code"
+            headers = {
+                "apikey": Config.SUPABASE_KEY,
+                "Content-Type": "application/x-www-form-urlencoded"
+            }
+            redirect_uri = f"{Config.REDIRECT_URL}/auth/callback"
+            data = {
+                "code": code,
+                "grant_type": "authorization_code",
+                "redirect_uri": redirect_uri
+            }
+            
+            print(f"DEBUG: Exchanging code via REST API")
+            response = requests.post(exchange_url, headers=headers, data=data)
+            print(f"DEBUG: Response status: {response.status_code}")
+            print(f"DEBUG: Response: {response.text}")
+            
+            if response.status_code == 200:
+                token_data = response.json()
+                access_token = token_data.get("access_token")
+                refresh_token = token_data.get("refresh_token")
+                
+                if access_token:
+                    # Set session and get user
+                    supabase.auth.set_session(
+                        access_token=access_token,
+                        refresh_token=refresh_token
+                    )
+                    user_response = supabase.auth.get_user()
+                    user = user_response.user
+                else:
+                    # Fallback to client-side handling
+                    return render_template("auth.html", mode="oauth_callback")
+            else:
+                # Fallback to client-side handling if REST API fails
+                print(f"DEBUG: REST API exchange failed, trying client method")
+                auth_response = supabase.auth.exchange_code_for_session({"auth_code": code})
+                
+                if hasattr(auth_response, 'user') and auth_response.user:
+                    user = auth_response.user
+                elif hasattr(auth_response, 'session') and auth_response.session:
+                    supabase.auth.set_session(
+                        access_token=auth_response.session.access_token,
+                        refresh_token=auth_response.session.refresh_token
+                    )
+                    user_response = supabase.auth.get_user()
+                    user = user_response.user
+                else:
+                    # Fallback to client-side handling
+                    return render_template("auth.html", mode="oauth_callback")
+            
+            # Check/create customer
+            existing = supabase.table("customers").select("id").eq("user_id", user.id).execute()
+            if not existing.data:
+                metadata = user.user_metadata or {}
+                name = metadata.get("full_name") or metadata.get("name") or user.email.split("@")[0]
+                supabase.table("customers").insert({
+                    "user_id": user.id,
+                    "name": name,
+                    "email": user.email,
+                    "phone": metadata.get("phone", ""),
+                }).execute()
+
+            session["user"] = user.id
+            session["email"] = user.email
+            session["role"] = get_user_role(user.id)
+
+            flash("Đăng nhập thành công!", "success")
+            return redirect(url_for("admin.dashboard") if session["role"] == "admin" else url_for("customer.dashboard"))
+            
         except Exception as e:
-            flash(f"Lỗi xác thực: {str(e)}", "error")
-            return redirect(url_for("auth.login"))
+            import traceback
+            print(f"DEBUG: Error in callback: {e}")
+            print(f"DEBUG: Traceback: {traceback.format_exc()}")
+            # Fallback to client-side handling
+            return render_template("auth.html", mode="oauth_callback")
     
-    # GET không có code: hiển thị trang cho JavaScript xử lý hash
-    return render_template("auth.html", mode="oauth_callback")
+    # Nếu có hash fragment, render template để JS xử lý (implicit flow)
+    return render_template("auth.html", 
+                          mode="oauth_callback",
+                          supabase_url=Config.SUPABASE_URL,
+                          supabase_key=Config.SUPABASE_KEY)
 
 
-def _handle_oauth_user(user, is_new_user=False):
+@bp.route("/auth/complete", methods=["POST"])  
+def oauth_complete():
+    """Complete OAuth with code or tokens from JS"""
+    code = request.form.get("code")
+    access_token = request.form.get("access_token")
+    refresh_token = request.form.get("refresh_token")
+
     try:
-        existing_customer = (
-            supabase.table("customers")
-            .select("id")
-            .eq("user_id", user.id)
-            .execute()
-        )
-        if not existing_customer.data:
-            user_metadata = user.user_metadata or {}
-            name = (
-                user_metadata.get("full_name") or 
-                user_metadata.get("name") or 
-                user_metadata.get("display_name") or
-                (user_metadata.get("first_name", "") + " " + user_metadata.get("last_name", "")).strip() or
-                (user.email or "").split("@")[0] if user.email else "User"
+        # Case 1: PKCE flow - exchange code for session
+        if code:
+            print(f"DEBUG: Exchanging code: {code}")
+            auth_response = supabase.auth.exchange_code_for_session({"auth_code": code})
+            print(f"DEBUG: Exchange response: {auth_response}")
+            
+            if hasattr(auth_response, 'user') and auth_response.user:
+                user = auth_response.user
+            elif hasattr(auth_response, 'session') and auth_response.session:
+                # If response has session, set it and get user
+                supabase.auth.set_session(
+                    access_token=auth_response.session.access_token,
+                    refresh_token=auth_response.session.refresh_token
+                )
+                user_response = supabase.auth.get_user()
+                user = user_response.user
+            else:
+                flash("Xác thực thất bại: không nhận được thông tin người dùng", "error")
+                return redirect(url_for("auth.login"))
+        
+        # Case 2: Implicit flow - use tokens directly
+        elif access_token:
+            auth_response = supabase.auth.set_session(
+                access_token=access_token,
+                refresh_token=refresh_token
             )
+            user = auth_response.user
+        else:
+            flash("Xác thực thất bại: thiếu thông tin xác thực", "error")
+            return redirect(url_for("auth.login"))
+
+        # Check/create customer
+        existing = supabase.table("customers").select("id").eq("user_id", user.id).execute()
+        if not existing.data:
+            metadata = user.user_metadata or {}
+            name = metadata.get("full_name") or metadata.get("name") or user.email.split("@")[0]
             supabase.table("customers").insert({
                 "user_id": user.id,
                 "name": name,
-                "email": user.email or "",
-                "phone": user_metadata.get("phone", ""),
+                "email": user.email,
+                "phone": metadata.get("phone", ""),
             }).execute()
-            
-            message = "Đăng ký và đăng nhập thành công!"
-        else:
-            message = "Đăng nhập thành công!"
-        session["user"] = user.id
-        session["email"] = user.email or ""
-        session["role"] = get_user_role(user.id)
-        
-        flash(message, "success")
-        
-        if session["role"] == "admin":
-            return redirect(url_for("admin.dashboard"))
-        return redirect(url_for("customer.dashboard"))
-        
-    except Exception as e:
-        flash(f"Lỗi xử lý tài khoản: {str(e)}", "error")
-        return redirect(url_for("auth.login"))
 
+        session["user"] = user.id
+        session["email"] = user.email
+        session["role"] = get_user_role(user.id)
+
+        flash("Đăng nhập thành công!", "success")
+        return redirect(url_for("admin.dashboard") if session["role"] == "admin" else url_for("customer.dashboard"))
+
+    except Exception as e:
+        import traceback
+        print(f"ERROR: {e}")
+        print(f"DEBUG: Traceback: {traceback.format_exc()}")
+        flash(f"Lỗi xác thực: {str(e)}", "error")
+        return redirect(url_for("auth.login"))
 
 @bp.route("/logout")
 def logout():
     session.clear()
     return redirect(url_for("auth.login"))
-
-
